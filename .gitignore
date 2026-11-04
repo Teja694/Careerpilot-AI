@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+
+venv/
+venv312/
+__pycache__/
+*.py[cod]
+
+career_coach_chroma_db/
+career_pilot_chroma_db/
+
+.streamlit/secrets.toml
+.vscode/
+.DS_Store
+Thumbs.db
