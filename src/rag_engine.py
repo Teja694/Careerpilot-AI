@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tempfile
 import os
 from pathlib import Path
 from typing import List, Tuple
@@ -15,7 +16,7 @@ from langchain_chroma import Chroma
 
 load_dotenv()
 
-DB_DIR = "career_pilot_chroma_db"
+
 
 
 def get_llm(model: str = "openai/gpt-oss-20b",
@@ -68,9 +69,15 @@ def split_documents(docs: List[Document], chunk_size: int = 800, chunk_overlap: 
 # -----------------------------
 # Stage 3 + 4: Embeddings + Vector DB
 # -----------------------------
-def build_vectorstore(chunks: List[Document], persist_directory: str = DB_DIR):
+
+def build_vectorstore(chunks: List[Document]):
 
     embeddings = get_embeddings()
+
+    # Create a writable temporary directory for ChromaDB
+    persist_directory = tempfile.mkdtemp(
+        prefix="career_pilot_chroma_"
+    )
 
     vectorstore = Chroma.from_documents(
         documents=chunks,
