@@ -1,16 +1,14 @@
-.env
-.env.*
-!.env.example
-
+# Virtual environments
+.venv/
 venv/
 venv312/
+
+# Environment variables
+.env
+
+# Python cache
 __pycache__/
-*.py[cod]
+*.pyc
 
-career_coach_chroma_db/
+# ChromaDB local storage
 career_pilot_chroma_db/
-
-.streamlit/secrets.toml
-.vscode/
-.DS_Store
-Thumbs.db

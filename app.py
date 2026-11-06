@@ -176,6 +176,6 @@ st.markdown(
 4. **Vector Database:** Chunks and embeddings are stored inside ChromaDB.  
 5. **Query Embedding:** User question is also converted into an embedding.  
 6. **Similarity Search:** ChromaDB finds the most relevant resume/JD chunks.  
-7. **LLM Generation:** Groq Llama model generates the final career guidance using only retrieved context.  
+7. **LLM Generation:**OpenAI GPT-OSS-20B hosted by Groq generates the final career guidance..  
 """
 )

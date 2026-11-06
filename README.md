@@ -5,7 +5,7 @@ This project is an end-to-end **traditional RAG application**.
 It uses:
 
 - LangChain
-- Groq Chat model
+- OpenAI GPT-OSS-20B via Groq Cloud API
 - HuggingFace Embeddings
 - ChromaDB Vector Database
 - Streamlit UI
