@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 from pathlib import Path
 from typing import List, Tuple
 
@@ -71,9 +70,6 @@ def split_documents(docs: List[Document], chunk_size: int = 800, chunk_overlap: 
 # -----------------------------
 def build_vectorstore(chunks: List[Document], persist_directory: str = DB_DIR):
 
-    if Path(persist_directory).exists():
-        shutil.rmtree(persist_directory)
-
     embeddings = get_embeddings()
 
     vectorstore = Chroma.from_documents(
@@ -88,50 +84,99 @@ def build_vectorstore(chunks: List[Document], persist_directory: str = DB_DIR):
 # -----------------------------
 # Stage 5: Retrieve Context
 # -----------------------------
-def retrieve_context(vectorstore, query: str, k: int = 5) -> Tuple[str, List[Document]]:
-    retriever = vectorstore.as_retriever(search_kwargs={"k": k})
-    docs = retriever.invoke(query)
-    context = "\n\n".join([f"SOURCE: {d.metadata}\nCONTENT:\n{d.page_content}" for d in docs])
-    return context, docs
+def retrieve_context(vectorstore, query: str, k: int = 4):
+    retriever = vectorstore.as_retriever(
+        search_kwargs={"k": k}
+    )
 
+    source_docs = retriever.invoke(query)
+
+    print("\n--- RETRIEVED DOCUMENTS ---")
+
+    for i, doc in enumerate(source_docs):
+        print(f"\nDocument {i + 1}")
+        print("Metadata:", doc.metadata)
+        print("Content:", doc.page_content[:300])
+
+    context = "\n\n".join(
+        doc.page_content for doc in source_docs
+    )
+
+    return context, source_docs
 
 # -----------------------------
 # Stage 6: Generate Answer
 # -----------------------------
+
 def run_career_pilot(vectorstore, resume_text: str, jd_text: str, question: str):
     llm = get_llm()
 
+    # Retrieve relevant chunks from ChromaDB
     retrieval_query = f"""
-    Resume content and job description content relevant to this career coaching question:
+    Find information from the resume and job description
+    relevant to the following question:
+
     {question}
     """
 
-    context, source_docs = retrieve_context(vectorstore, retrieval_query, k=6)
+    context, source_docs = retrieve_context(
+        vectorstore,
+        retrieval_query,
+        k=6
+    )
 
+    # Include the original documents directly in the prompt.
+    # This ensures the LLM receives both documents even if
+    # ChromaDB does not retrieve every relevant chunk.
     prompt = ChatPromptTemplate.from_template("""
-You are an expert AI Career Coach for students, freshers and working professionals.
-Use ONLY the given context from the resume and job description.
-Do not invent skills, experience or job requirements.
+You are an expert AI Career Coach.
 
-CONTEXT:
+Your task is to analyze a candidate's resume against a job description.
+
+IMPORTANT INSTRUCTIONS:
+1. The resume and job description provided below are the primary sources.
+2. Do not claim that the job description is missing when it is provided below.
+3. Compare the candidate's actual skills with the job requirements.
+4. Do not invent skills, qualifications, or experience.
+5. Clearly distinguish between skills the candidate has and skills they need.
+
+CANDIDATE RESUME:
+{resume_text}
+
+JOB DESCRIPTION:
+{jd_text}
+
+ADDITIONAL RETRIEVED CONTEXT FROM CHROMADB:
 {context}
 
 USER QUESTION:
 {question}
 
-Give a clear, practical answer with these sections when relevant:
-1. Current Match Summary
-2. Strengths
-3. Missing Skills / Gaps
-4. Recommended Improvements
-5. Suggested Projects
-6. Interview Preparation Tips
+Provide a detailed, practical answer using these sections when relevant:
 
-Keep the answer simple, actionable and beginner-friendly.
+1. Overall Resume and Job Match
+2. ATS-Style Match Score (explain that it is an estimate)
+3. Matching Skills
+4. Missing Skills and Skill Gaps
+5. Resume Improvement Suggestions
+6. Recommended Projects
+7. Interview Preparation Questions
+
+If the job description is very short, explain that the analysis is limited
+by the available job requirements instead of saying it is missing.
+
+Make the response structured, specific, and actionable.
 """)
 
     chain = prompt | llm | StrOutputParser()
-    answer = chain.invoke({"context": context, "question": question})
+
+    answer = chain.invoke({
+        "resume_text": resume_text,
+        "jd_text": jd_text,
+        "context": context,
+        "question": question
+    })
+
     return answer, source_docs
 
 

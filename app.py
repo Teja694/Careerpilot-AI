@@ -92,6 +92,9 @@ with col2:
 
 resume_text = read_uploaded_file(resume_file) if resume_file else resume_text_input
 jd_text = read_uploaded_file(jd_file) if jd_file else jd_text_input
+print("RESUME LENGTH:", len(resume_text))
+print("JD LENGTH:", len(jd_text))
+print("JD CONTENT:", repr(jd_text[:500]))
 
 if "vectorstore" not in st.session_state:
     st.session_state.vectorstore = None
@@ -107,6 +110,13 @@ if st.button("🚀 Build Career Pilot RAG Index", type="primary"):
         with st.spinner("Running RAG stages: loading → chunking → embeddings → vector database..."):
             docs = create_documents(resume_text, jd_text)
             chunks = split_documents(docs, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+            print("Total documents:", len(docs))
+            print("Total chunks:", len(chunks))
+            for i, chunk in enumerate(chunks):
+                print(f"Chunk {i + 1}")
+                print("Source:", chunk.metadata)
+                print("Content:", chunk.page_content[:200])
+                print("-" * 50)
             vectorstore = build_vectorstore(chunks)
 
             st.session_state.vectorstore = vectorstore
